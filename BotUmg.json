@@ -1,0 +1,694 @@
+{
+  "name": "BotUmg",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -140,
+        80
+      ],
+      "id": "a26ffc9ae1",
+      "name": "Telegram Trigger",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "sFUOrdVI4DW8Mm3P",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"] }}\n",
+        "text": "Hola, gracias por escribir. Soy tu asistente virtual para el proyecto del curso Administración de Tecnologías de la Información. Estoy aquí para ayudarte. Por favor, envíame el nombre o una imagen del producto que buscas y verificaré si está en existencia o si tenemos productos similares disponibles.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        220
+      ],
+      "id": "",
+      "name": "Telegram",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "sFUOrdVI4DW8Mm3P",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2-4b0e-8b24-f25468fd23b1",
+              "name": "=chat_id",
+              "value": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "7ac0a-4b5e-b3d0-a35903af1e1c",
+              "name": "mensaje",
+              "value": "={{$json[\"message\"][\"text\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "c005be5a-3587-4707-bcd8-4845726a34a7",
+              "name": "tiene_imagen",
+              "value": "={{!!$json[\"message\"][\"photo\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        240
+      ],
+      "id": "25fdab4a-c13fb97d8d31bf",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  CASE \n    WHEN EXISTS (\n      SELECT 1 \n      FROM estado_usuarios_telegram \n      WHERE chat_id ={{ $('Telegram Trigger').item.json.message.chat.id }}\n    ) THEN (\n      SELECT \n        CASE \n          WHEN imagenes_procesadas > 4 THEN 99 \n          ELSE estado_codigo \n        END\n      FROM estado_usuarios_telegram \n      WHERE chat_id = {{ $('Telegram Trigger').item.json.message.chat.id }}\n    )\n    ELSE 0\nEND AS estado_codigo;\n"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        60
+      ],
+      "id": "6c17a2a7-efd3-407a-a7e0-d42c5d116a11",
+      "name": "Microsoft SQL",
+      "alwaysOutputData": false,
+      "credentials": {
+        "microsoftSql": {
+          "id": "dSGjac4sbkDdehPQ",
+          "name": "Microsoft SQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE [dbo].[estado_usuarios_telegram]\nSET \n    estado_codigo = 2,\n    imagenes_procesadas = ISNULL(imagenes_procesadas, 0) + 1\nWHERE \n    chat_id ={{ $('Telegram Trigger').item.json.message.chat.id }}\n"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        940,
+        -420
+      ],
+      "id": "10d7a91c-fcfe-4ae4-96a5-e102f92cdfaf",
+      "name": "UpdateSQL",
+      "credentials": {
+        "microsoftSql": {
+          "id": "dSGjac4sbkDdehPQ",
+          "name": "Microsoft SQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "IF NOT EXISTS (\n    SELECT 1 FROM estado_usuarios_telegram\n    WHERE chat_id = {{ $('Telegram Trigger').item.json.message.chat.id }}\n)\nBEGIN\n    INSERT INTO estado_usuarios_telegram (\n        chat_id,\n        estado,\n        producto_buscado,\n        ultima_interaccion,\n        estado_codigo\n    )\n    VALUES (\n        {{ $('Telegram Trigger').item.json.message.chat.id }},\n        'esperando_producto',\n        '{{ $('Telegram Trigger').item.json.message.text }}',\n        GETDATE(),\n        2\n    );\nEND\n"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        260
+      ],
+      "id": "8f50c42b-ed50-4732-ad22d6fd40",
+      "name": "InsertSQL",
+      "credentials": {
+        "microsoftSql": {
+          "id": "dSGjac4sbkDdehPQ",
+          "name": "Microsoft SQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.estado_codigo }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "eaf04c21-9fa7-5bb9bf4c7590"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "0"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c6fb15ff-8f70-aca6af309719",
+                    "leftValue": "={{$json.estado_codigo}}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8d7b7b74-58d2-9d51ebdfca68",
+                    "leftValue": "={{ $json.estado_codigo }}",
+                    "rightValue": 2,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b18dbfc2-4c82b-82fb1ee0f8df",
+                    "leftValue": "={{ $json.estado_codigo }}",
+                    "rightValue": 99,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "99"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        620,
+        100
+      ],
+      "id": "aaa6-aa786f570291",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"] }}\n",
+        "text": "🚫 Has alcanzado el límite de imágenes procesadas por este servicio. Si necesitas más análisis, contacta con soporte o espera al próximo ciclo. ¡Gracias!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        380
+      ],
+      "id": "cd1a5877-ab08-6b8778bc4",
+      "name": "Telegram1",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "sFUOrdVIMm3P",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const photos = $json.message?.photo || $json.photo;\n\nif (photos) {\n  return [{\n    tipo: 'mensaje_con_imagen',\n    origen: 'telegram_trigger',\n    file_id: photos.slice(-1)[0].file_id\n  }];\n} else {\n  return [{\n    tipo: 'otro',\n    origen: 'telegram_trigger',\n    nota: 'No se recibió una imagen en el mensaje.'\n  }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        240
+      ],
+      "id": "87ac3920-3d-e026d4231df0",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"Code\"].json.tipo }}",
+                    "rightValue": "mensaje_con_imagen",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cb01d0503-19bd13d90b2f"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b5f6a50a-8-4389-82ce-c6a55676578f",
+                    "leftValue": "={{ $node[\"Code\"].json.tipo }}",
+                    "rightValue": "respuesta_getFile",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e3c5264f-43a8c1822e23a48",
+                    "leftValue": "={{ $node[\"Code\"].json.tipo }}",
+                    "rightValue": "otro",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        880,
+        40
+      ],
+      "id": "06d8-fcb2-4372-a29-8b6fba4ca38",
+      "name": "TipoMensaje"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Accede al campo de datos binarios\nconst file = items[0]?.binary?.data;\n\nif (!file || !file.fileName) {\n    throw new Error(\"No se encontraron datos binarios o nombre de archivo.\");\n}\n\n// Extraer y normalizar la extensión del archivo\nconst fileExtension = file.fileName.trim().toLowerCase().split('.').pop();\n\nswitch (fileExtension) {\n    case 'jpg':\n    case 'jpeg':\n        file.mimeType = 'image/jpeg';\n        break;\n    case 'png':\n        file.mimeType = 'image/png';\n        break;\n    default:\n        throw new Error(\"El archivo no es una imagen válida (JPG o PNG).\");\n}\n\n// Devolver los datos con MIME corregido\nreturn [{ binary: { data: file } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        0
+      ],
+      "id": "f3a5a1f0-e53e-43d7-b6113f7",
+      "name": "AnalizaImagen"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "maxOutputTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -140
+      ],
+      "id": "e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Analiza esta imagen por favor",
+        "options": {
+          "systemMessage": "Eres un asistente visual de inventario. A partir de una imagen sin texto:\nDetecta si la imagen muestra un producto físico reconocible (especialmente de electrónica: laptops, smartphones, audífonos, tablets, cargadores, etc.).\nSi es un producto, responde en formato JSON con:\n\"esProducto\": true\n\"nombre\": nombre estimado del producto (ej: \"Laptop Lenovo\")\n\"categoria\": tipo general (ej: \"Computadora portátil\")\n\"descripcion\": breve descripción funcional (ej: \"Portátil de uso general con pantalla de 15 pulgadas\")\n\"precio\": precio aproximado en quetzales (ej: \"Q4500.00\")\n\"existencia\": número aleatorio entre 1 y 100 unidades\nSi no es un producto electrónico, responde:\n{\"esProducto\": false,\n  \"razon\": \"La imagen no representa un producto de electrónica\"}Reglas clave:\nNo inventes categorías no relacionadas con tecnología.\nElige precios realistas según el objeto.\nNo repitas texto innecesario ni salgas del formato JSON.\nEjemplo de salida esperada (imagen de una laptop):{\n  \"esProducto\": true,\n  \"nombre\": \"Laptop HP Pavilion\",\n  \"categoria\": \"Computadora portátil\",\n  \"descripcion\": \"Laptop con pantalla de 15.6'' ideal para tareas de oficina y estudio\",\n  \"precio\": \"Q5200.00\",\n  \"existencia\": 37}\n",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        -240
+      ],
+      "id": "9c7ba1d0-f1930dc5fc87",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "let respuesta = $input.first().json.output;\n\n// Si la IA devolvió un string con Markdown, limpiarlo antes de parsear\nif (typeof respuesta === 'string') {\n  try {\n    // Elimina etiquetas Markdown tipo ```json y ```\n    respuesta = respuesta\n      .replace(/^```json\\s*/i, '')\n      .replace(/```$/, '')\n      .trim();\n\n    respuesta = JSON.parse(respuesta);\n  } catch (error) {\n    return [{\n      json: {\n        mensaje: `⚠️ Error al interpretar la respuesta de la IA: ${error.message}`\n      }\n    }];\n  }\n}\n\nif (respuesta.esProducto) {\n  const mensaje = \n    `📦 *Producto detectado*\\n` +\n    `📱 *Nombre*: ${respuesta.nombre}\\n` +\n    `📂 *Categoría*: ${respuesta.categoria}\\n` +\n    `📝 *Descripción*: ${respuesta.descripcion}\\n` +\n    `💰 *Precio*: ${respuesta.precio}\\n` +\n    `📦 *Existencia*: ${respuesta.existencia}`;\n\n  return [{ json: { mensaje } }];\n} else {\n  const razon = respuesta.razon || \"No se proporcionó una razón por el modelo.\";\n  const mensaje = \n    `⚠️ *No se detectó un producto válido.*\\n` +\n    `🔍 Razón: ${razon}`;\n\n  return [{ json: { mensaje } }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        -200
+      ],
+      "id": "4212b4c1-d592-18c3c861b",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"] }}\n",
+        "text": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        740,
+        -240
+      ],
+      "id": "0360ac9a-47e0c4288",
+      "name": "Telegram2",
+      "webhookId": "39a6ccf-f5b0614",
+      "credentials": {
+        "telegramApi": {
+          "id": "sFUOrdVI4DW8Mm3P",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.photo[1].file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        20
+      ],
+      "id": "1bac79dc6-9b9a509a53bf",
+      "name": "Telegram3",
+      "webhookId": "8e74278f3820f",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Microsoft SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft SQL": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "InsertSQL": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateSQL": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "InsertSQL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TipoMensaje",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        []
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TipoMensaje": {
+      "main": [
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AnalizaImagen": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram2": {
+      "main": [
+        [
+          {
+            "node": "UpdateSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram3": {
+      "main": [
+        [
+          {
+            "node": "AnalizaImagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "19-41b3-9bb8-422a87d25096",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "57c6f17ff169d9258d59add460c"
+  },
+  "id": "o9sZexGWU",
+  "tags": []
+}
