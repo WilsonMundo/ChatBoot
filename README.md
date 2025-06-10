@@ -48,8 +48,8 @@ Puedes probar el bot directamente desde Telegram:
 | `scripts/code_nodes.js`  | Código de nodos personalizados (`Code`) |
 | `scripts/prompt.md`      | Prompt utilizado por el modelo IA |
 | `sql/estado_usuarios_telegram.sql` | Script de base de datos para seguimiento de usuarios |
-| `docs/arquitectura.png`  | Diagrama opcional del flujo |
-| `docs/flujo_completo.png`| Captura del flujo visual |
+| `flujo.png`  | Diagrama opcional del flujo |
+| `flujo.png`| Captura del flujo visual |
 
 ---
 
@@ -80,6 +80,11 @@ Este script:
 - Crea la base de datos `ChatBotUMG`
 - Aplica configuraciones comunes de SQL Server
 - Crea la tabla `[dbo].[estado_usuarios_telegram]` con campos y defaults
+## 🔄 Flujo del proceso
+
+A continuación se muestra una vista general del flujo del bot desde la recepción de una imagen hasta la respuesta y actualización del estado del usuario:
+
+![Flujo del Bot](https://raw.githubusercontent.com/WilsonMundo/ChatBoot/refs/heads/main/Flujo.jpg)
 
 
 🧪 Ejemplo de salida esperada
