@@ -70,6 +70,18 @@ Puedes probar el bot directamente desde Telegram:
 git clone https://github.com/tuusuario/bot-inventario-electronica.git
 cd bot-inventario-electronica
 
+## 🧱 Script completo de base de datos
+
+Si estás usando SQL Server en entorno local o Docker, puedes usar el script completo:
+
+➡️ `sql/full_setup_chatbotumg.sql`
+
+Este script:
+- Crea la base de datos `ChatBotUMG`
+- Aplica configuraciones comunes de SQL Server
+- Crea la tabla `[dbo].[estado_usuarios_telegram]` con campos y defaults
+
+
 🧪 Ejemplo de salida esperada
 📦 *Producto detectado*
 📱 *Nombre*: Smartphone Honor Magic 5 Pro
