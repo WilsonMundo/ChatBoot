@@ -22,6 +22,15 @@ Este proyecto implementa un bot de Telegram que recibe imágenes, detecta si rep
 
 ---
 
+## 🚀 ¡Probar el bot ahora!
+
+Puedes probar el bot directamente desde Telegram:  
+👉 [https://t.me/ecommerce_ai_umg_bot](https://t.me/ecommerce_ai_umg_bot)
+
+📌 **Límite:** Cada usuario puede procesar hasta **6 imágenes** durante el período de prueba.
+
+---
+
 ## 🧠 Tecnologías utilizadas
 
 - **n8n** para orquestación del flujo
