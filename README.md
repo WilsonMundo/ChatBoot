@@ -69,7 +69,7 @@ Puedes probar el bot directamente desde Telegram:
 ```bash
 git clone https://github.com/tuusuario/bot-inventario-electronica.git
 cd bot-inventario-electronica
-
+```
 ## 🧱 Script completo de base de datos
 
 Si estás usando SQL Server en entorno local o Docker, puedes usar el script completo:
